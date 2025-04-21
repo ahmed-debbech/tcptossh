@@ -5,6 +5,7 @@ import (
 	"net"
 	"errors"
     "io"
+    "time"
 )
 
 func startServertoServer() error {
@@ -70,7 +71,8 @@ func handleServer(conn net.Conn) {
         }
         cnxLock.Unlock()
 
-        n, err := conn.Write([]byte("eee"))
+        time.Sleep(time.Second)
+        n, err := conn.Write([]byte("ls"))
         if err != nil {
             log.Println("could not write to target server", err)
             return

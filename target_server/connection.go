@@ -3,6 +3,7 @@ package main
 import (
 	"log"
 	"net"
+	"time"
 )
 
 
@@ -14,12 +15,59 @@ func StartConnection(){
     }
     defer conn.Close()
 
+	go func(){ //keep the cnx alive
+		for {
+			time.Sleep(time.Second * 5)
+			_, err := conn.Write([]byte{0x01})
+			if err != nil {
+				log.Println("connection to server dropped!")
+				conn.Close() //TODO this will break fix it
+				return
+			}
+		}
+	}()
+
+	outchannel := make(chan []byte)
+	defer close(outchannel)
+
+	go func(){
+		for {
+			stream := <- outchannel
+			_, err := conn.Write(stream)
+			if err != nil {
+				log.Println("connection to server dropped!")
+				conn.Close() //TODO this will break fix it
+				return
+			}
+		}
+	}()
+	
 	for {
+		
 		data := make([]byte, MAX_TRANSFR)
 		_, err = conn.Read(data)
 		if err != nil {
-			log.Println("Could not write to server", err)
+			log.Println("Could not read from server", err)
 			return
 		}
+
+		splt := splitByNilByte(data)
+		log.Println(splt)
+
+		ExecCmd(splt, outchannel)
 	}
+}
+
+func splitByNilByte(b []byte) []byte{
+	
+	k := make([]byte, 0)
+	for i:=0; i<=len(b)-1; i++{
+		if b[i] != 0x00 {
+			k = append(k, b[i])
+		}else{
+			break
+		}
+	}
+	return k
+
 }
