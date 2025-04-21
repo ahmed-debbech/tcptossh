@@ -1,0 +1,81 @@
+package main
+
+import (
+	"log"
+	"net"
+	"errors"
+    "io"
+)
+
+func startServertoServer() error {
+
+
+	ln, err := net.Listen("tcp", ":42001")
+    if err != nil {
+        log.Println(err)
+        return errors.New("not able to start server socket")
+    }
+
+    log.Println("Started Server <---> Target Server TCP connection! on 42001")
+
+    for {
+        conn, err := ln.Accept()
+        if err != nil {
+            log.Println(err)
+            continue
+        }
+
+        cnxLock.Lock()
+        if !tcpCnxExist {
+            tcpCnxExist = true
+            //currentServerTcp = &conn
+            go handleServer(conn)
+        }else{
+            conn.Close()
+        }
+        cnxLock.Unlock()
+    }
+}
+
+func handleServer(conn net.Conn) {
+	defer conn.Close()
+    defer func(){
+        cnxLock.Lock()
+        tcpCnxExist = false
+        cnxLock.Unlock()
+    }()
+    
+    go func(){
+        for{
+            buf := make([]byte, MAX_TRANSFR)
+            _, err := conn.Read(buf)
+            if err != nil {
+                if err == io.EOF {
+                    log.Println("TCP socket from target server closed!", err)
+                    cnxLock.Lock()
+                    tcpCnxExist = false
+                    cnxLock.Unlock()
+                    return;
+                }
+            }
+        }
+    }()
+
+    for{
+
+        cnxLock.Lock()
+        if !tcpCnxExist {
+            cnxLock.Unlock()
+            return
+        }
+        cnxLock.Unlock()
+
+        n, err := conn.Write([]byte("eee"))
+        if err != nil {
+            log.Println("could not write to target server", err)
+            return
+        }
+        log.Println("wrote to target server", n, "bytes")
+    }
+
+}
