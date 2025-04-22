@@ -12,12 +12,12 @@ const (
 var (
 	cnxLock sync.Mutex
 	tcpCnxExist = false
+	inchannel = make(chan []byte)
 )
 
 func main(){
 
 	log.Println("Hello world")
-
 
 	go func(){if err := startServertoServer(); err != nil {
 		log.Println("[FATAL]", err)

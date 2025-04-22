@@ -52,7 +52,6 @@ func StartConnection(){
 		}
 
 		splt := splitByNilByte(data)
-		log.Println(splt)
 
 		ExecCmd(splt, outchannel)
 	}

@@ -5,7 +5,8 @@ import (
 	"net"
 	"errors"
     "io"
-    "time"
+    "fmt"
+    //"time"
 )
 
 func startServertoServer() error {
@@ -36,6 +37,9 @@ func startServertoServer() error {
         }
         cnxLock.Unlock()
     }
+    close(inchannel)
+
+    return nil
 }
 
 func handleServer(conn net.Conn) {
@@ -47,9 +51,17 @@ func handleServer(conn net.Conn) {
     }()
     
     go func(){
+        for {
+            cmd := ""
+            fmt.Scanln(&cmd)
+            inchannel <- []byte(cmd)
+        }
+    }()
+
+    go func(){
         for{
             buf := make([]byte, MAX_TRANSFR)
-            _, err := conn.Read(buf)
+            n, err := conn.Read(buf)
             if err != nil {
                 if err == io.EOF {
                     log.Println("TCP socket from target server closed!", err)
@@ -58,6 +70,9 @@ func handleServer(conn net.Conn) {
                     cnxLock.Unlock()
                     return;
                 }
+            }
+            if n > 1 {
+                fmt.Println(string(buf), ",", n)
             }
         }
     }()
@@ -71,13 +86,15 @@ func handleServer(conn net.Conn) {
         }
         cnxLock.Unlock()
 
-        time.Sleep(time.Second)
-        n, err := conn.Write([]byte("ls"))
+        data := <- inchannel
+        _, err := conn.Write(data)
         if err != nil {
             log.Println("could not write to target server", err)
             return
         }
-        log.Println("wrote to target server", n, "bytes")
+        //log.Println("wrote to target server", n, "bytes")
+
+        //time.Sleep(time.Second * 30)
     }
 
 }
