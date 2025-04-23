@@ -6,6 +6,9 @@ import (
 	"errors"
     "io"
     "fmt"
+    "bufio"
+    "strings"
+    "os"
     //"time"
 )
 
@@ -52,8 +55,11 @@ func handleServer(conn net.Conn) {
     
     go func(){
         for {
-            cmd := ""
-            fmt.Scanln(&cmd)
+            log.Println("shell>")
+            var cmd string
+            reader := bufio.NewReader(os.Stdin)
+            cmd, _ = reader.ReadString('\n')
+            cmd = strings.TrimSpace(cmd)
             inchannel <- []byte(cmd)
         }
     }()
@@ -72,7 +78,7 @@ func handleServer(conn net.Conn) {
                 }
             }
             if n > 1 {
-                fmt.Println(string(buf), ",", n)
+                fmt.Println("remote>", string(buf))
             }
         }
     }()

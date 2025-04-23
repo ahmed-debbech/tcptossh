@@ -4,12 +4,19 @@ import (
 	"log"
 	"os/exec"
 	"bufio"
+	"os"
 )
 
 func ExecCmd(data []byte, out chan []byte){
 
-	cmd := exec.Command("sh", "-c", string(data))
+	err := os.WriteFile("s.sh", data, 0777)
+	if err != nil {
+		panic(err)
+	}
+	defer os.Remove("s.sh")
 
+	cmd := exec.Command("sh", "s.sh")
+	log.Println(cmd)
 	stdout, err := cmd.StdoutPipe()
 	if err != nil {
 		return
@@ -27,7 +34,7 @@ func ExecCmd(data []byte, out chan []byte){
 		scanner.Split(bufio.ScanLines)
         for scanner.Scan() {
             //out <- append(scanner.Bytes(), '\n')
-			out <- []byte(scanner.Text())
+			out <- scanner.Bytes()
 		}	
     }()
 
@@ -36,7 +43,7 @@ func ExecCmd(data []byte, out chan []byte){
 		scanner.Split(bufio.ScanLines)
         for scanner.Scan() {
             //out <- append(scanner.Bytes(), '\n')
-			out <- []byte(scanner.Text())
+			out <- scanner.Bytes()
 		}	
     }()
 
