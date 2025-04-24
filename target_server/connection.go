@@ -7,7 +7,7 @@ import (
 )
 
 
-func StartConnection(){
+func StartConnection(out chan []byte,in chan []byte){
 	conn, err := net.Dial("tcp", "localhost:42001")
     if err != nil {
         log.Println("Could not connect to server to build tunnel:", err)
@@ -27,12 +27,10 @@ func StartConnection(){
 		}
 	}()
 
-	outchannel := make(chan []byte)
-	defer close(outchannel)
 
 	go func(){
 		for {
-			stream := <- outchannel
+			stream := <- out
 			_, err := conn.Write(stream)
 			if err != nil {
 				log.Println("connection to server dropped!")
@@ -43,7 +41,7 @@ func StartConnection(){
 	}()
 	
 	for {
-		
+
 		data := make([]byte, MAX_TRANSFR)
 		_, err = conn.Read(data)
 		if err != nil {
@@ -53,7 +51,8 @@ func StartConnection(){
 
 		splt := splitByNilByte(data)
 
-		ExecCmd(splt, outchannel)
+		in <- splt
+		//ExecCmd(splt, outchannel)
 	}
 }
 

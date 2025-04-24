@@ -6,7 +6,7 @@ import (
 )
 
 const (
-	MAX_TRANSFR = 1024
+	MAX_TRANSFR = 4096
 )
 
 var (

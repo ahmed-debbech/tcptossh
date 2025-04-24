@@ -7,7 +7,7 @@ import (
     "io"
     "fmt"
     "bufio"
-    "strings"
+    _"strings"
     "os"
     //"time"
 )
@@ -59,7 +59,7 @@ func handleServer(conn net.Conn) {
             var cmd string
             reader := bufio.NewReader(os.Stdin)
             cmd, _ = reader.ReadString('\n')
-            cmd = strings.TrimSpace(cmd)
+            //cmd = strings.TrimSpace(cmd)
             inchannel <- []byte(cmd)
         }
     }()
@@ -78,7 +78,7 @@ func handleServer(conn net.Conn) {
                 }
             }
             if n > 1 {
-                fmt.Println("remote>", string(buf))
+                fmt.Println(string(buf))
             }
         }
     }()
