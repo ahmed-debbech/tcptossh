@@ -46,12 +46,13 @@ func StartConnection(out chan []byte,in chan []byte){
 		_, err = conn.Read(data)
 		if err != nil {
 			log.Println("Could not read from server", err)
+			conn.Close() //TODO this will break fix it
 			return
 		}
 
-		splt := splitByNilByte(data)
+		//splt := splitByNilByte(data)
 
-		in <- splt
+		in <- data
 		//ExecCmd(splt, outchannel)
 	}
 }

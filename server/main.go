@@ -12,7 +12,7 @@ const (
 var (
 	cnxLock sync.Mutex
 	tcpCnxExist = false
-	inchannel = make(chan []byte)
+	inchannel = make(chan []byte, 1)
 )
 
 func main(){

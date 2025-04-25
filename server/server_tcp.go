@@ -6,9 +6,10 @@ import (
 	"errors"
     "io"
     "fmt"
-    "bufio"
     _"strings"
     "os"
+    "golang.org/x/term"
+
     //"time"
 )
 
@@ -23,7 +24,8 @@ func startServertoServer() error {
 
     log.Println("Started Server <---> Target Server TCP connection! on 42001")
 
-    for {
+    for {  
+
         conn, err := ln.Accept()
         if err != nil {
             log.Println(err)
@@ -33,6 +35,8 @@ func startServertoServer() error {
         cnxLock.Lock()
         if !tcpCnxExist {
             tcpCnxExist = true
+
+            log.Println("New connection is accepted")
             //currentServerTcp = &conn
             go handleServer(conn)
         }else{
@@ -54,13 +58,28 @@ func handleServer(conn net.Conn) {
     }()
     
     go func(){
+
+        oldState, err := term.MakeRaw(int(os.Stdin.Fd()))
+        if err != nil {
+            panic(err)
+        }
+        defer term.Restore(int(os.Stdin.Fd()), oldState)
+    
+        fmt.Println("Press keys (ESC to exit):")
+    
+        buf := make([]byte, 1)
         for {
-            log.Println("shell>")
-            var cmd string
-            reader := bufio.NewReader(os.Stdin)
-            cmd, _ = reader.ReadString('\n')
-            //cmd = strings.TrimSpace(cmd)
-            inchannel <- []byte(cmd)
+            _, err := os.Stdin.Read(buf)
+            if err != nil {
+                break
+            }
+            // Print the key byte value and rune
+            //fmt.Printf("You pressed: %q (byte: %d)\n", buf[0], buf[0])
+            if buf[0] == 27 { // ESC key
+                break
+            }
+            inchannel <- []byte(buf)
+
         }
     }()
 
