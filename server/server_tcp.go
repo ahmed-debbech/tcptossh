@@ -78,6 +78,7 @@ func handleServer(conn net.Conn) {
             if buf[0] == 27 { // ESC key
                 break
             }
+            fmt.Print(string(buf))
             inchannel <- []byte(buf)
 
         }

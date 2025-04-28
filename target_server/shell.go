@@ -8,6 +8,12 @@ import (
 
 func StartShell(out chan []byte, in chan []byte){
 
+	defer func() {
+        if r := recover(); r != nil {
+            log.Println("Recovered from panic during send:", r)
+        }
+    }()
+
 	cmd := exec.Command("bash")
 
 	ptmx, err := pty.Start(cmd)
@@ -18,7 +24,7 @@ func StartShell(out chan []byte, in chan []byte){
 	defer ptmx.Close()
 
 	size := &pty.Winsize{
-		Rows : 500,
+		Rows : 1,
 		Cols : 500,
 		X    : 0,
 		Y    : 0,
