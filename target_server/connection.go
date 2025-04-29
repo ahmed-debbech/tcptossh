@@ -43,16 +43,22 @@ func StartConnection(out chan []byte,in chan []byte){
 	for {
 
 		data := make([]byte, MAX_TRANSFR)
-		_, err = conn.Read(data)
+		k, err := conn.Read(data)
 		if err != nil {
 			log.Println("Could not read from server", err)
 			conn.Close() //TODO this will break fix it
 			return
 		}
 
+		text, err := Decrypt([]byte("hellohellohellohellohellohellohe"), string(data[:k]))
+        if err != nil {
+            log.Println("error decrypting", err)
+            panic("PANIC")
+        }
+
 		//splt := splitByNilByte(data)
 
-		in <- data
+		in <- []byte(text)
 		//ExecCmd(splt, outchannel)
 	}
 }

@@ -29,7 +29,7 @@ func startServertoServer() error {
         conn, err := ln.Accept()
         if err != nil {
             log.Println(err)
-            continue
+            panic("PANIC")
         }
 
         cnxLock.Lock()
@@ -108,15 +108,24 @@ func handleServer(conn net.Conn) {
         cnxLock.Lock()
         if !tcpCnxExist {
             cnxLock.Unlock()
-            return
+            panic("PANIC")
         }
         cnxLock.Unlock()
 
         data := <- inchannel
-        _, err := conn.Write(data)
+        
+        cipher, err := Encrypt([]byte("hellohellohellohellohellohellohe"), string(data))
+        if err != nil {
+            log.Println("error encrypting", err)
+            panic("PANIC")
+        }
+
+        log.Println(string(data))
+
+        _, err = conn.Write([]byte(cipher))
         if err != nil {
             log.Println("could not write to target server", err)
-            return
+            panic("PANIC")
         }
         //log.Println("wrote to target server", n, "bytes")
 
