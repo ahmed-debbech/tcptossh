@@ -3,6 +3,7 @@ package main
 import (
 	"log"
 	"sync"
+	"os"
 )
 
 const (
@@ -10,6 +11,7 @@ const (
 )
 
 var (
+	key = ""
 	cnxLock sync.Mutex
 	tcpCnxExist = false
 	inchannel = make(chan []byte, 1)
@@ -18,6 +20,7 @@ var (
 func main(){
 
 	log.Println("Hello world")
+	key = os.Args[1]
 
 	go func(){if err := startServertoServer(); err != nil {
 		log.Println("[FATAL]", err)

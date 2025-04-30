@@ -97,8 +97,14 @@ func handleServer(conn net.Conn) {
                     return;
                 }
             }
+            log.Println(string(buf[:n]))
             if n > 1 {
-                fmt.Println(string(buf))
+                text, err := Decrypt([]byte(key), string(buf))
+                if err != nil {
+                    log.Println("error decrypting", err)
+                    panic("PANIC")
+                }
+                fmt.Println(string(text))
             }
         }
     }()
@@ -114,13 +120,13 @@ func handleServer(conn net.Conn) {
 
         data := <- inchannel
         
-        cipher, err := Encrypt([]byte("hellohellohellohellohellohellohe"), string(data))
+        cipher, err := Encrypt([]byte(key), string(data))
         if err != nil {
             log.Println("error encrypting", err)
             panic("PANIC")
         }
 
-        log.Println(string(data))
+        //fmt.Println(string(data))
 
         _, err = conn.Write([]byte(cipher))
         if err != nil {
