@@ -5,114 +5,82 @@ import (
 	"crypto/cipher"
 	"crypto/rand"
 	"encoding/base64"
+	"errors"
 	"io"
-	"strconv"
-	"time"
+	"bytes"
 )
 
-const (
-	nonceSize = 12 // Standard nonce size for AES-GCM
-	timeTolerance = 5 * time.Second // Allow for some clock drift
-)
-
-// generateKey creates a random AES key. Keep this key SECRET!
-func GenerateKey() ([]byte, error) {
-	key := make([]byte, 32) // AES-256 key
-	_, err := io.ReadFull(rand.Reader, key)
-	if err != nil {
-		return nil, err
-	}
-	return key, nil
-}
-
-// encrypt encrypts the data using AES-GCM with a nonce and timestamp.
-// The output format is base64(nonce|timestamp|ciphertext).
+// Encrypt encrypts plaintext using AES-256-CBC and returns a base64-encoded ciphertext.
 func Encrypt(key []byte, plaintext string) (string, error) {
+	if len(key) != 32 {
+		return "", errors.New("key must be 32 bytes for AES-256")
+	}
+
 	block, err := aes.NewCipher(key)
 	if err != nil {
 		return "", err
 	}
 
-	gcm, err := cipher.NewGCM(block)
-	if err != nil {
+	// Generate a random IV
+	iv := make([]byte, aes.BlockSize)
+	if _, err := io.ReadFull(rand.Reader, iv); err != nil {
 		return "", err
 	}
 
-	nonce := make([]byte, nonceSize)
-	if _, err := io.ReadFull(rand.Reader, nonce); err != nil {
-		return "", err
-	}
+	// PKCS7 padding
+	padding := aes.BlockSize - len(plaintext)%aes.BlockSize
+	padtext := append([]byte(plaintext), bytes.Repeat([]byte{byte(padding)}, padding)...)
 
-	timestamp := time.Now().UTC().UnixNano()
-	timestampBytes := []byte(strconv.FormatInt(timestamp, 10))
+	ciphertext := make([]byte, len(padtext))
+	mode := cipher.NewCBCEncrypter(block, iv)
+	mode.CryptBlocks(ciphertext, padtext)
 
-	// Prepend nonce and timestamp to the plaintext
-	data := append(nonce, append(timestampBytes, []byte(plaintext)...)...)
-
-	ciphertext := gcm.Seal(nil, nonce, data, nil)
-
-	// Encode to base64 for easier handling and transmission
-	return base64.StdEncoding.EncodeToString(ciphertext), nil
+	// Prepend IV to ciphertext
+	final := append(iv, ciphertext...)
+	return base64.StdEncoding.EncodeToString(final), nil
 }
 
-// decrypt decrypts the data, verifies the nonce, timestamp, and integrity.
-// It expects the input to be in the format base64(nonce|timestamp|ciphertext).
+// Decrypt decrypts a base64-encoded AES-256-CBC ciphertext and returns the plaintext.
 func Decrypt(key []byte, ciphertextBase64 string) (string, error) {
-	ciphertext, err := base64.StdEncoding.DecodeString(ciphertextBase64)
+	if len(key) != 32 {
+		return "", errors.New("key must be 32 bytes for AES-256")
+	}
+
+	data, err := base64.StdEncoding.DecodeString(ciphertextBase64)
 	if err != nil {
 		return "", err
 	}
+
+	if len(data) < aes.BlockSize {
+		return "", errors.New("ciphertext too short")
+	}
+
+	iv := data[:aes.BlockSize]
+	ciphertext := data[aes.BlockSize:]
 
 	block, err := aes.NewCipher(key)
 	if err != nil {
 		return "", err
 	}
 
-	gcm, err := cipher.NewGCM(block)
-	if err != nil {
-		return "", err
+	if len(ciphertext)%aes.BlockSize != 0 {
+		return "", errors.New("ciphertext is not a multiple of the block size")
 	}
 
-	if len(ciphertext) < nonceSize {
-		return "", err
+	mode := cipher.NewCBCDecrypter(block, iv)
+	plaintext := make([]byte, len(ciphertext))
+	mode.CryptBlocks(plaintext, ciphertext)
+
+	// Remove PKCS7 padding
+	length := len(plaintext)
+	padLen := int(plaintext[length-1])
+	if padLen > aes.BlockSize || padLen == 0 {
+		return "", errors.New("invalid padding")
 	}
-
-	nonce := ciphertext[:nonceSize]
-	encryptedData := ciphertext[nonceSize:]
-
-	// Extract timestamp
-	var timestampStr string
-	var dataWithoutTimestamp []byte
-	for i, b := range encryptedData {
-		if b < '0' || b > '9' {
-			timestampStr = string(encryptedData[:i])
-			dataWithoutTimestamp = encryptedData[i:]
-			break
-		}
-		if i == len(encryptedData)-1 {
-			return "", err
+	for i := length - padLen; i < length; i++ {
+		if plaintext[i] != byte(padLen) {
+			return "", errors.New("invalid padding")
 		}
 	}
-
-	timestampInt, err := strconv.ParseInt(timestampStr, 10, 64)
-	if err != nil {
-		return "", err
-	}
-	messageTime := time.Unix(0, timestampInt).UTC()
-	now := time.Now().UTC()
-
-	// Check for replay attack based on timestamp
-	if now.Sub(messageTime) > timeTolerance {
-		return "", err
-	}
-	if messageTime.After(now.Add(timeTolerance)) {
-		return "", err
-	}
-
-	plaintextBytes, err := gcm.Open(nil, nonce, dataWithoutTimestamp, nil)
-	if err != nil {
-		return "", err
-	}
-
-	return string(plaintextBytes), nil
+	return string(plaintext[:length-padLen]), nil
 }
