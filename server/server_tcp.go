@@ -97,12 +97,17 @@ func handleServer(conn net.Conn) {
                     return;
                 }
             }
-            log.Println(string(buf[:n]))
+
+
             if n > 1 {
-                text, err := Decrypt([]byte(key), string(buf))
+                log.Println("eeee", string(buf[:n]))
+                ll := buf[:n]
+                PipeMessages(string(ll))
+                text, err := Decrypt([]byte(key), string(ll[1:n-1]))
                 if err != nil {
                     log.Println("error decrypting", err)
-                    panic("PANIC")
+                     panic("PANIC")
+                    //continue;
                 }
                 fmt.Println(string(text))
             }
@@ -138,4 +143,27 @@ func handleServer(conn net.Conn) {
         //time.Sleep(time.Second * 30)
     }
 
+}
+
+func PipeMessages(line string) []string{
+    ss := make([]string, 0)
+    
+    opening := false
+
+    s := ""
+    for i := 0; i<=len(line)-1; i++{
+        if line[i] == '[' && !opening {
+            opening = true
+            s = ""
+        }
+        if line[i] == ']' && opening {
+            ss = append(ss, s)
+            opening = false
+        }
+        if line[i] != ']' && opening {
+            s += string(line[i])
+        }
+    }
+    log.Println(ss)
+    return ss
 }

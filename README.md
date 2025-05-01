@@ -11,6 +11,7 @@ It reverses a tcp connection made from your TARGET server to your actual CONTROL
 
 * Same TCP connection
 * Reversed client and server
+* Uses AES256-CBC encryption
 
 [You] <===> [Client terminal][Server] <====> [Target Server]
 
@@ -22,5 +23,4 @@ It reverses a tcp connection made from your TARGET server to your actual CONTROL
 
 ### Limitations
 
-* Only single bash is created when the target server app runs. All TCP connection use that same bash session.
 * Only single connection from target server can be handled on the server side at a time.

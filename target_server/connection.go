@@ -34,11 +34,14 @@ func StartConnection(out chan []byte,in chan []byte){
 	go func(){
 		for {
 			stream := <- out
+
 			cipher, err := Encrypt([]byte(key), string(stream))
 			if err != nil {
 				panic("PANIC")
 			}
-			_, err = conn.Write([]byte(cipher))
+			with := "["+cipher+"]"
+			log.Println("ciphered", with)
+			_, err = conn.Write([]byte(with))
 			if err != nil {
 				log.Println("connection to server dropped!")
 				conn.Close() //TODO this will break fix it
