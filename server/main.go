@@ -26,9 +26,6 @@ func main(){
 		log.Println("[FATAL]", err)
 	}}()
 
-	/*go func(){ if err := startClienttoServer(linkingCh); err != nil {
-		log.Println("[FATAL]", err)
-	}}()*/
 
 	select{}
 }

@@ -9,8 +9,6 @@ import (
     _"strings"
     "os"
     "golang.org/x/term"
-
-    //"time"
 )
 
 func startServertoServer() error {
@@ -37,7 +35,6 @@ func startServertoServer() error {
             tcpCnxExist = true
 
             log.Println("New connection is accepted")
-            //currentServerTcp = &conn
             go handleServer(conn)
         }else{
             conn.Close()
@@ -73,12 +70,11 @@ func handleServer(conn net.Conn) {
             if err != nil {
                 break
             }
-            // Print the key byte value and rune
-            //fmt.Printf("You pressed: %q (byte: %d)\n", buf[0], buf[0])
+
             if buf[0] == 27 { // ESC key
                 break
             }
-            fmt.Print(string(buf))
+            //fmt.Print(string(buf))
             inchannel <- []byte(buf)
 
         }
@@ -100,16 +96,16 @@ func handleServer(conn net.Conn) {
 
 
             if n > 1 {
-                log.Println("eeee", string(buf[:n]))
                 ll := buf[:n]
-                PipeMessages(string(ll))
-                text, err := Decrypt([]byte(key), string(ll[1:n-1]))
-                if err != nil {
-                    log.Println("error decrypting", err)
-                     panic("PANIC")
-                    //continue;
+                l := PipeMessages(string(ll))
+                for k := 0; k<=len(l)-1; k++{
+                    text, err := Decrypt([]byte(key), string(l[k][1:len(l[k])-1]))
+                    if err != nil {
+                        log.Println("error decrypting", err)
+                        panic("PANIC")
+                    }
+                    fmt.Print(string(text))
                 }
-                fmt.Println(string(text))
             }
         }
     }()
@@ -131,16 +127,11 @@ func handleServer(conn net.Conn) {
             panic("PANIC")
         }
 
-        //fmt.Println(string(data))
-
         _, err = conn.Write([]byte(cipher))
         if err != nil {
             log.Println("could not write to target server", err)
             panic("PANIC")
         }
-        //log.Println("wrote to target server", n, "bytes")
-
-        //time.Sleep(time.Second * 30)
     }
 
 }
@@ -157,6 +148,7 @@ func PipeMessages(line string) []string{
             s = ""
         }
         if line[i] == ']' && opening {
+            s += string(line[i])
             ss = append(ss, s)
             opening = false
         }
@@ -164,6 +156,5 @@ func PipeMessages(line string) []string{
             s += string(line[i])
         }
     }
-    log.Println(ss)
     return ss
 }

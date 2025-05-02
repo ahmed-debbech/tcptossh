@@ -40,7 +40,6 @@ func StartConnection(out chan []byte,in chan []byte){
 				panic("PANIC")
 			}
 			with := "["+cipher+"]"
-			log.Println("ciphered", with)
 			_, err = conn.Write([]byte(with))
 			if err != nil {
 				log.Println("connection to server dropped!")
@@ -66,10 +65,8 @@ func StartConnection(out chan []byte,in chan []byte){
             panic("PANIC")
         }
 
-		//splt := splitByNilByte(data)
 
 		in <- []byte(text)
-		//ExecCmd(splt, outchannel)
 	}
 }
 
